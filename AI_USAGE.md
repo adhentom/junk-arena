@@ -4,11 +4,11 @@ Use Codex during the hackathon and briefly document its actual contribution here
 
 ## Event build log
 
-No participant AI usage has been recorded yet. Replace the placeholder row as you build. Mark human review as pending until someone has reviewed the contribution.
+Mark human review as pending until someone has reviewed the contribution.
 
 | Date and time with timezone | Tool / model, if known | Task | Assistance and affected files | Human review / corrections | Validation and result |
 | --- | --- | --- | --- | --- | --- |
-| TODO | Codex | TODO | TODO | Pending | TODO |
+| 2026-10-24T21:55+05:30 | Devin (Cognition AI) | Milestone 1: keyboard-playable Phaser arena | Set up the Next.js app and wrote the Phaser scenes, the scoring, wave and combat logic, keyboard input, the React wrapper, the unit tests, and the README and CHANGELOG updates. Files: `app/`, `src/`, config files, `README.md`, `CHANGELOG.md`. | Reviewed by Adhen (@adhentom) on PR #1 at 2026-10-24T22:15+05:30. No corrections requested. | Lint, typecheck, `npm test` (21 tests) and `npm run build` passed. A Playwright browser smoke test covered start, gameplay, Game Over and restart. Balance was adjusted after an automated playtest showed the game was too easy. |
 
 ## Template preparation
 

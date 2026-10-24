@@ -4,16 +4,26 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
-No project implementation has been recorded yet. Replace this sentence with entries as you build:
+## 2026-10-24T22:23+05:30 — Playtest fixes: edge clipping and early-wave difficulty
 
-```text
-## <actual timestamp> — <short change title>
+- Changed: `src/game/scenes/ArenaScene.ts`: the player's movement bounds are now inset by the 6 px margin around the sprite, so the whole sprite stays visible at the arena edges. `src/game/balance.ts`: Rustling speed raised from 110 to 125, the starting wave has 8 enemies instead of 6, and the base spawn interval is 750 ms instead of 900 ms.
+- Why: The recorded UI playtest of PR #1 found the player sprite clipped at the left edge and waves 1–3 cleared at full HP with little movement.
+- Validation: `npm run typecheck`, `npm run lint`, `npm test` (21 tests) and `npm run build` passed. In a Playwright check against `npm start`, holding A puts the player against the left edge with the sprite fully visible. Holding Space without moving now dies at wave 4 after 54 s, where it previously reached wave 5. Waves 1–3 were still cleared at 100 HP with this idle strategy. No app console errors.
+- Limitations: Waves 1–3 are still forgiving, on purpose, as a warm-up. Balance needs a human playtest on real hardware. The HUD can overlap the player in the top-left corner.
 
-- Changed: <feature or files changed>
-- Why: <reason for the change>
-- Validation: <commands or manual checks actually run, with results>
-- Limitations: <known issues or "None identified in these checks">
-```
+## 2026-10-24T22:15+05:30 — Record human review of Milestone 1
+
+- Changed: `AI_USAGE.md`: the Milestone 1 row now records that Adhen reviewed it on PR #1.
+- Why: Keep the AI usage record accurate after review.
+- Validation: Documentation-only change; checked that the diff touches only `AI_USAGE.md` and `CHANGELOG.md`.
+- Limitations: None identified in these checks.
+
+## 2026-10-24T21:55+05:30 — Milestone 1: keyboard-playable Phaser arena
+
+- Changed: Set up a Next.js 16 + TypeScript app (`package.json`, `package-lock.json`, `tsconfig.json`, `eslint.config.mjs`, `next.config.ts`, `vitest.config.mts`, `app/`, and additions to `.gitignore`). Added a Phaser 3.90 game in `src/game/`: Boot, Menu, Arena, HUD and Game Over scenes; game numbers kept in one place (`balance.ts`); pure scoring, wave and combat logic (`systems/`); a typed event bus between the game and React; and best-score storage. Added keyboard input in `src/input/` and a client-only React wrapper that loads the game, in `src/ui/GameShell.tsx`. Set `agentRules: false` in `next.config.ts` so Next.js doesn't rewrite our `AGENTS.md`. Updated the README project overview, run instructions, and controls.
+- Why: Approved plan, Phase 1. Get a reliable game you can play end to end before adding the camera, gestures, or AI.
+- Validation: `npm run typecheck` passed. `npm run lint` passed. `npm test` passed: 5 files, 21 tests. `npm run build` passed. Ran a browser smoke test against `npm start` with Playwright driving Chrome: one canvas, the menu shows, Enter starts wave 1, and score, wave and HP update. Holding Space without moving reached wave 5 and died there, after waves were made harder (below). Game Over showed "SCRAPPED", score, wave and "NEW BEST!". Enter restarted at wave 1, score 0, HP 100, still with one canvas. No app console errors. An earlier playtest of the same strategy lasted 90 s and reached wave 6 at full HP, so I added per-wave enemy speed growth (+8%) and batch spawning (one more enemy every 2 waves, up to 4).
+- Limitations: Keyboard only. No camera, gestures, AI scanning, sound, or deployment yet. Chrome on the test VM used software WebGL, so frame rate and balance still need checking on a real laptop.
 
 ## Template setup — 10 October 2026
 
