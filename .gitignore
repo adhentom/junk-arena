@@ -22,3 +22,11 @@ Thumbs.db
 *.log
 
 # Add entries appropriate to your chosen language or framework.
+
+# Next.js and tooling
+.pnp
+.pnp.*
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts

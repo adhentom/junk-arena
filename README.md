@@ -31,26 +31,31 @@ This template has no application code or required technology stack. The document
 
 ## Project overview — complete during the event
 
-- **Project name:** TODO
-- **Short description:** TODO — what it does, who it helps, and why it matters.
-- **Team:** TODO — participant names and GitHub handles; maximum 4 members.
-- **Working demo:** TODO — link or local demo instructions.
-- **Technology stack:** TODO
+- **Project name:** JUNK//ARENA
+- **Short description:** An arcade survival game where you scan everyday junk with your webcam and AI turns it into weapons, shields, traps, or abilities, while you fight swarms with hand gestures. **Current build:** a keyboard-playable arena. Camera, gestures and AI scanning are not implemented yet.
+- **Team:** Adhen ([@adhentom](https://github.com/adhentom))
+- **Working demo:** Local only for now. See "Run the project" below.
+- **Technology stack:** Next.js 16 (App Router), TypeScript, Phaser 3.90, Vitest. Planned: MediaPipe Tasks Vision, Zod, and a server-side vision model API.
 
 ### Run the project
 
-Replace these placeholders with commands that actually work for your project:
+1. Prerequisites: Node.js 22.12 or newer (tested with Node 24.19.0) and npm.
+2. Install dependencies: `npm install`
+3. Environment setup: none needed yet. No API keys are used.
+4. Start the project: `npm run dev`, then open <http://localhost:3000>. For a production build, run `npm run build && npm start`.
+5. Run checks: `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`.
 
-1. Prerequisites and versions: TODO
-2. Dependency installation: TODO
-3. Environment setup: TODO — list required variable names and provide a sanitized `.env.example` if needed.
-4. Start the project: TODO
-5. Run checks or tests: TODO
+### How to play (current build)
+
+- **Enter:** start, or play again after Game Over.
+- **WASD / arrow keys:** move.
+- **Space (hold):** fire. Shots auto-aim at the nearest enemy.
+- Survive waves of Rustlings. Kills chain into a combo multiplier (up to ×5) that resets when you get hit. Clearing a wave gives a bonus. Your best score is saved in this browser.
 
 ### Current status
 
-- Working features: TODO
-- Known limitations: TODO
-- Libraries, APIs, and public datasets used: TODO — include source links and applicable attribution.
+- Working features: menu, keyboard movement, auto-aim blaster, Rustling enemies that chase you, escalating waves (more enemies, more HP, faster, spawning in bigger batches), HP with brief invulnerability after a hit, score with combo multiplier and wave bonus, Game Over and restart, local best score, and screen-reader status text.
+- Known limitations: no camera, hand gestures, AI object scanning, sound, or deployed demo yet. Balance has only been checked with automated playtests on a VM with software WebGL. Performance on real laptops still needs checking.
+- Libraries, APIs, and public datasets used: [Next.js](https://github.com/vercel/next.js) (MIT), [React](https://github.com/facebook/react) (MIT), [Phaser](https://github.com/phaserjs/phaser) (MIT), [Vitest](https://github.com/vitest-dev/vitest) (MIT), [TypeScript](https://github.com/microsoft/TypeScript) (Apache-2.0), [ESLint](https://github.com/eslint/eslint) (MIT). All game art is drawn in code at runtime; there are no external assets.
 
 See [AI_USAGE.md](AI_USAGE.md) for AI assistance and [CHANGELOG.md](CHANGELOG.md) for the development record.
