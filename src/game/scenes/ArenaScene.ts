@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import { BALANCE } from "../balance";
 import { ARENA, COLORS, FONT, SCENES, TEXTURES } from "../constants";
 import type { GameBus } from "../events";
+
 import { applyDamage, createPlayerHealth, nearestTarget, type PlayerHealth } from "../systems/combat";
 import {
   createScore,
@@ -14,6 +15,8 @@ import {
 import { waveConfig } from "../systems/waves";
 import { createInputState, movementVector, type InputState } from "../../input/inputState";
 import { attachKeyboard } from "../../input/keyboard";
+
+const PLAYER_BODY = { radius: 14, margin: 6 } as const;
 
 type Sprite = Phaser.Physics.Arcade.Sprite;
 
@@ -65,7 +68,17 @@ export class ArenaScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, ARENA.width, ARENA.height);
 
     this.player = this.physics.add.sprite(ARENA.width / 2, ARENA.height / 2, TEXTURES.player);
-    this.player.setCollideWorldBounds(true).setCircle(14, 6, 6).setDepth(2);
+    this.player.setCircle(PLAYER_BODY.radius, PLAYER_BODY.margin, PLAYER_BODY.margin).setDepth(2);
+    // Inset the bounds by the texture margin so the whole sprite stays visible at the edges.
+    (this.player.body as Phaser.Physics.Arcade.Body).setBoundsRectangle(
+      new Phaser.Geom.Rectangle(
+        PLAYER_BODY.margin,
+        PLAYER_BODY.margin,
+        ARENA.width - PLAYER_BODY.margin * 2,
+        ARENA.height - PLAYER_BODY.margin * 2,
+      ),
+    );
+    this.player.setCollideWorldBounds(true);
 
     this.enemies = this.physics.add.group();
     this.bullets = this.physics.add.group();

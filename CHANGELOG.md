@@ -4,6 +4,13 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-24T22:23+05:30 — Playtest fixes: edge clipping and early-wave difficulty
+
+- Changed: `src/game/scenes/ArenaScene.ts`: the player's movement bounds are now inset by the 6 px margin around the sprite, so the whole sprite stays visible at the arena edges. `src/game/balance.ts`: Rustling speed raised from 110 to 125, the starting wave has 8 enemies instead of 6, and the base spawn interval is 750 ms instead of 900 ms.
+- Why: The recorded UI playtest of PR #1 found the player sprite clipped at the left edge and waves 1–3 cleared at full HP with little movement.
+- Validation: `npm run typecheck`, `npm run lint`, `npm test` (21 tests) and `npm run build` passed. In a Playwright check against `npm start`, holding A puts the player against the left edge with the sprite fully visible. Holding Space without moving now dies at wave 4 after 54 s, where it previously reached wave 5. Waves 1–3 were still cleared at 100 HP with this idle strategy. No app console errors.
+- Limitations: Waves 1–3 are still forgiving, on purpose, as a warm-up. Balance needs a human playtest on real hardware. The HUD can overlap the player in the top-left corner.
+
 ## 2026-10-24T22:15+05:30 — Record human review of Milestone 1
 
 - Changed: `AI_USAGE.md`: the Milestone 1 row now records that Adhen reviewed it on PR #1.
