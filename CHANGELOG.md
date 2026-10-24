@@ -4,6 +4,13 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-24T22:15+05:30 — Record human review of Milestone 1
+
+- Changed: `AI_USAGE.md`: the Milestone 1 row now records that Adhen reviewed it on PR #1.
+- Why: Keep the AI usage record accurate after review.
+- Validation: Documentation-only change; checked that the diff touches only `AI_USAGE.md` and `CHANGELOG.md`.
+- Limitations: None identified in these checks.
+
 ## 2026-10-24T21:55+05:30 — Milestone 1: keyboard-playable Phaser arena
 
 - Changed: Set up a Next.js 16 + TypeScript app (`package.json`, `package-lock.json`, `tsconfig.json`, `eslint.config.mjs`, `next.config.ts`, `vitest.config.mts`, `app/`, and additions to `.gitignore`). Added a Phaser 3.90 game in `src/game/`: Boot, Menu, Arena, HUD and Game Over scenes; game numbers kept in one place (`balance.ts`); pure scoring, wave and combat logic (`systems/`); a typed event bus between the game and React; and best-score storage. Added keyboard input in `src/input/` and a client-only React wrapper that loads the game, in `src/ui/GameShell.tsx`. Set `agentRules: false` in `next.config.ts` so Next.js doesn't rewrite our `AGENTS.md`. Updated the README project overview, run instructions, and controls.
