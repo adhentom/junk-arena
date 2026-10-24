@@ -1,9 +1,22 @@
+import type { AbilityId } from "./abilities/catalog";
+import type { AbilityStatus } from "./systems/abilities";
+import type { WavePhase } from "./systems/waveFlow";
+
+export type AbilityHud = {
+  id: AbilityId;
+  name: string;
+  status: AbilityStatus;
+  remainingMs: number;
+};
+
 export type GameStateEvent = {
   score: number;
   wave: number;
   hp: number;
   maxHp: number;
   multiplier: number;
+  phase: WavePhase;
+  ability: AbilityHud;
 };
 
 export type GameOverEvent = {

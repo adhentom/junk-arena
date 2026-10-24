@@ -4,6 +4,32 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-24T22:30+05:30 — Phase 2: abilities and preparation between waves
+
+- Changed:
+  - Abilities: `src/game/abilities/catalog.ts` defines Shield, Shock Pulse and a Scanner placeholder, with their numbers in `balance.ts`. `src/game/systems/abilities.ts` handles equipping, activating, cooldowns, shield duration and status.
+  - Wave flow: `src/game/systems/waveFlow.ts` controls the order active → cleared → prep → next wave, and stops everything once the game is over. `src/game/systems/run.ts` creates a fresh run state on every start or restart.
+  - Combat: `combat.ts` gains `applyContactDamage`, which the shield uses to block damage, and `targetsInRadius` for Shock Pulse.
+  - Preparation screen: new `src/game/scenes/PrepScene.ts` shows three ability cards. Choose with ←/→, A/D, 1–3 or a click; Enter starts the next wave.
+  - Arena: `ArenaScene.ts` uses the wave flow, pauses during preparation, adds the E/Shift ability key, the shield ring, the pulse ring, and messages for activation, cooldown, expiry and the offline Scanner. Both rings are created once and reused.
+  - HUD and status: `HudScene.ts` shows the ability and its cooldown. `events.ts` and `GameShell.tsx` add the phase and ability status to the game state and the screen-reader status.
+  - Input and docs: E and Shift are added in `inputState.ts`, the menu lists the new control, and the README is updated.
+- Why: Phase 2 of the approved plan. It adds a playable ability system and a pause between waves before any camera or AI work. The Scanner deliberately does nothing so that nothing pretends to be AI output.
+- Validation:
+  - `npm run typecheck` passed. `npm run lint` passed. `npm test` passed: 8 files, 40 tests, adding ability, wave flow, run reset and combat tests. `npm run build` passed.
+  - Browser check with Playwright driving Chrome against `npm start`:
+    - Wave 1 cleared and opened preparation. Pressing 2 and then Enter twice started wave 2 only once, with Shock Pulse equipped.
+    - E fired the pulse and started its cooldown. Pressing E again showed the cooldown message.
+    - Wave 2 preparation: choosing Scanner showed "SCANNER OFFLINE - NO AI SCAN YET".
+    - Wave 3 preparation: Shield was active for about 2.5 s, then went into cooldown.
+    - After dying, Enter restarted at wave 1, score 0, HP 100, with a ready Shield and one canvas. No app console errors.
+- Limitations:
+  - No camera, gestures or AI. The Scanner is a placeholder.
+  - Choosing an ability resets its cooldown.
+  - The faded wave-clear banner can still show behind the preparation overlay.
+  - Balance and frame rate have only been checked on a VM with software WebGL.
+  - These commits have not been pushed.
+
 ## 2026-10-24T22:23+05:30 — Playtest fixes: edge clipping and early-wave difficulty
 
 - Changed: `src/game/scenes/ArenaScene.ts`: the player's movement bounds are now inset by the 6 px margin around the sprite, so the whole sprite stays visible at the arena edges. `src/game/balance.ts`: Rustling speed raised from 110 to 125, the starting wave has 8 enemies instead of 6, and the base spawn interval is 750 ms instead of 900 ms.

@@ -12,6 +12,14 @@ describe("inputState", () => {
     expect(state.up).toBe(false);
   });
 
+  it("maps E and both Shift keys to the ability action", () => {
+    for (const code of ["KeyE", "ShiftLeft", "ShiftRight"]) {
+      const state = createInputState();
+      expect(applyKey(state, code, true)).toBe(true);
+      expect(state.ability).toBe(true);
+    }
+  });
+
   it("ignores unbound keys", () => {
     const state = createInputState();
     expect(applyKey(state, "KeyZ", true)).toBe(false);

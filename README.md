@@ -32,7 +32,7 @@ This template has no application code or required technology stack. The document
 ## Project overview — complete during the event
 
 - **Project name:** JUNK//ARENA
-- **Short description:** An arcade survival game where you scan everyday junk with your webcam and AI turns it into weapons, shields, traps, or abilities, while you fight swarms with hand gestures. **Current build:** a keyboard-playable arena. Camera, gestures and AI scanning are not implemented yet.
+- **Short description:** An arcade survival game where you scan everyday junk with your webcam and AI turns it into weapons, shields, traps, or abilities, while you fight swarms with hand gestures. **Current build:** a keyboard-playable arena with abilities and a preparation phase between waves. Camera, gestures and AI scanning are not implemented yet.
 - **Team:** Adhen ([@adhentom](https://github.com/adhentom))
 - **Working demo:** Local only for now. See "Run the project" below.
 - **Technology stack:** Next.js 16 (App Router), TypeScript, Phaser 3.90, Vitest. Planned: MediaPipe Tasks Vision, Zod, and a server-side vision model API.
@@ -50,11 +50,18 @@ This template has no application code or required technology stack. The document
 - **Enter:** start, or play again after Game Over.
 - **WASD / arrow keys:** move.
 - **Space (hold):** fire. Shots auto-aim at the nearest enemy.
+- **E or Shift:** use your equipped ability. Pressing it while on cooldown shows the time remaining and does nothing.
+- **Preparation (between waves):** ← → or 1–3 to choose an ability (or click a card), then Enter to start the next wave.
 - Survive waves of Rustlings. Kills chain into a combo multiplier (up to ×5) that resets when you get hit. Clearing a wave gives a bonus. Your best score is saved in this browser.
+- Abilities:
+  - **Shield:** blocks all contact damage for 2.5 s, with a 9 s cooldown.
+  - **Shock Pulse:** deals 30 damage to enemies within 220 px and knocks them back, with a 6 s cooldown.
+  - **Scanner:** a placeholder for the future AI object scan. You can equip it, but it does nothing yet and says so on screen.
+  - You start each run with Shield. Choosing an ability in the preparation phase also gives you a fresh, ready copy of it.
 
 ### Current status
 
-- Working features: menu, keyboard movement, auto-aim blaster, Rustling enemies that chase you, escalating waves (more enemies, more HP, faster, spawning in bigger batches), HP with brief invulnerability after a hit, score with combo multiplier and wave bonus, Game Over and restart, local best score, and screen-reader status text.
+- Working features: menu, keyboard movement, auto-aim blaster, Rustling enemies that chase you, escalating waves (more enemies, more HP, faster, spawning in bigger batches), HP with brief invulnerability after a hit, score with combo multiplier and wave bonus, Game Over and restart, local best score, three abilities (Shield, Shock Pulse, and a Scanner placeholder) with cooldowns shown in the HUD, a preparation phase after each cleared wave, and screen-reader status text that includes the preparation phase and ability status.
 - Known limitations: no camera, hand gestures, AI object scanning, sound, or deployed demo yet. Balance has only been checked with automated playtests on a VM with software WebGL. Performance on real laptops still needs checking.
 - Libraries, APIs, and public datasets used: [Next.js](https://github.com/vercel/next.js) (MIT), [React](https://github.com/facebook/react) (MIT), [Phaser](https://github.com/phaserjs/phaser) (MIT), [Vitest](https://github.com/vitest-dev/vitest) (MIT), [TypeScript](https://github.com/microsoft/TypeScript) (Apache-2.0), [ESLint](https://github.com/eslint/eslint) (MIT). All game art is drawn in code at runtime; there are no external assets.
 

@@ -26,7 +26,11 @@ export const BALANCE = {
     spawnIntervalStepMs: 60,
     minSpawnIntervalMs: 300,
     maxAliveEnemies: 40,
-    breakMs: 2500,
+    clearDelayMs: 1200,
+  },
+  abilities: {
+    shield: { durationMs: 2500, cooldownMs: 9000 },
+    gadget: { cooldownMs: 6000, radius: 220, damage: 30, knockback: 90 },
   },
   scoring: {
     comboWindowMs: 2000,

@@ -12,7 +12,7 @@ const rules = {
   spawnIntervalStepMs: 60,
   minSpawnIntervalMs: 300,
   maxAliveEnemies: 40,
-  breakMs: 2500,
+  clearDelayMs: 1200,
 };
 
 describe("waveConfig", () => {
