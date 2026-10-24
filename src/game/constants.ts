@@ -6,6 +6,7 @@ export const SCENES = {
   arena: "Arena",
   hud: "Hud",
   gameOver: "GameOver",
+  prep: "Prep",
 } as const;
 
 export const TEXTURES = {
@@ -23,6 +24,7 @@ export const COLORS = {
   bullet: 0xfff35c,
   accent: 0xff2bd6,
   danger: 0xff3b5c,
+  shield: 0x7cf9ff,
 } as const;
 
 export const FONT = 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';

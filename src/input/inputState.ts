@@ -4,6 +4,7 @@ export type InputState = {
   left: boolean;
   right: boolean;
   fire: boolean;
+  ability: boolean;
 };
 
 type InputAction = keyof InputState;
@@ -18,10 +19,13 @@ export const KEY_BINDINGS: Readonly<Record<string, InputAction>> = {
   KeyD: "right",
   ArrowRight: "right",
   Space: "fire",
+  KeyE: "ability",
+  ShiftLeft: "ability",
+  ShiftRight: "ability",
 };
 
 export function createInputState(): InputState {
-  return { up: false, down: false, left: false, right: false, fire: false };
+  return { up: false, down: false, left: false, right: false, fire: false, ability: false };
 }
 
 /** Returns true when the key is bound to a game action. */
@@ -33,7 +37,7 @@ export function applyKey(state: InputState, code: string, isDown: boolean): bool
 }
 
 export function releaseAll(state: InputState): void {
-  state.up = state.down = state.left = state.right = state.fire = false;
+  state.up = state.down = state.left = state.right = state.fire = state.ability = false;
 }
 
 export function movementVector(state: InputState): { x: number; y: number } {

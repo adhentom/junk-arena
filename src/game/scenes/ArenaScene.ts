@@ -1,20 +1,17 @@
 import * as Phaser from "phaser";
+import { ABILITIES, type AbilityId } from "../abilities/catalog";
 import { BALANCE } from "../balance";
 import { ARENA, COLORS, FONT, SCENES, TEXTURES } from "../constants";
 import type { GameBus } from "../events";
-
-import { applyDamage, createPlayerHealth, nearestTarget, type PlayerHealth } from "../systems/combat";
-import {
-  createScore,
-  effectiveMultiplier,
-  registerKill,
-  registerPlayerHit,
-  registerWaveClear,
-  type ScoreState,
-} from "../systems/scoring";
+import { abilityStatus, blocksDamage, equipAbility, tryActivate } from "../systems/abilities";
+import { applyContactDamage, nearestTarget, targetsInRadius } from "../systems/combat";
+import { createRunState, type RunState } from "../systems/run";
+import { effectiveMultiplier, registerKill, registerPlayerHit, registerWaveClear } from "../systems/scoring";
+import { endRun, enterPrep, markWaveCleared, startNextWave } from "../systems/waveFlow";
 import { waveConfig } from "../systems/waves";
 import { createInputState, movementVector, type InputState } from "../../input/inputState";
 import { attachKeyboard } from "../../input/keyboard";
+import type { PrepData } from "./PrepScene";
 
 const PLAYER_BODY = { radius: 14, margin: 6 } as const;
 
@@ -28,18 +25,18 @@ export class ArenaScene extends Phaser.Scene {
   private enemies!: Phaser.Physics.Arcade.Group;
   private bullets!: Phaser.Physics.Arcade.Group;
   private sparks!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private shieldRing!: Phaser.GameObjects.Arc;
+  private pulseRing!: Phaser.GameObjects.Arc;
   private spawnTimer: Phaser.Time.TimerEvent | null = null;
-  private health!: PlayerHealth;
-  private score!: ScoreState;
-  private wave = 0;
+  private run!: RunState;
   private enemiesToSpawn = 0;
   private enemyHpMultiplier = 1;
   private enemySpeed: number = BALANCE.rustling.speed;
   private spawnBatch = 1;
-  private waveActive = false;
   private nextFireAt = 0;
+  private abilityKeyHeld = false;
+  private shieldWasUp = false;
   private facing = new Phaser.Math.Vector2(1, 0);
-  private isOver = false;
 
   constructor() {
     super(SCENES.arena);
@@ -47,17 +44,16 @@ export class ArenaScene extends Phaser.Scene {
 
   create() {
     // Phaser reuses the scene instance on restart, so reset every field here.
-    this.wave = 0;
+    this.run = createRunState();
     this.enemiesToSpawn = 0;
     this.enemyHpMultiplier = 1;
     this.enemySpeed = BALANCE.rustling.speed;
     this.spawnBatch = 1;
-    this.waveActive = false;
     this.nextFireAt = 0;
-    this.isOver = false;
+    this.abilityKeyHeld = false;
+    this.shieldWasUp = false;
+    this.spawnTimer = null;
     this.facing.set(1, 0);
-    this.health = createPlayerHealth(BALANCE.player.maxHp);
-    this.score = createScore();
 
     this.bus = this.registry.get("bus") as GameBus;
     this.controls = createInputState();
@@ -80,6 +76,12 @@ export class ArenaScene extends Phaser.Scene {
     );
     this.player.setCollideWorldBounds(true);
 
+    // Ability visuals are created once and reused, so activations never pile up objects.
+    this.shieldRing = this.add.circle(0, 0, 30, COLORS.shield, 0.12).setStrokeStyle(3, COLORS.shield);
+    this.shieldRing.setDepth(3).setVisible(false);
+    this.pulseRing = this.add.circle(0, 0, BALANCE.abilities.gadget.radius).setStrokeStyle(6, COLORS.accent);
+    this.pulseRing.setDepth(3).setVisible(false);
+
     this.enemies = this.physics.add.group();
     this.bullets = this.physics.add.group();
     this.sparks = this.add.particles(0, 0, TEXTURES.spark, {
@@ -99,13 +101,13 @@ export class ArenaScene extends Phaser.Scene {
     );
 
     this.scene.launch(SCENES.hud);
-    // Keeps the HUD combo display honest when a combo expires without a new kill.
+    // Keeps the HUD combo and cooldown displays honest between events.
     this.time.addEvent({ delay: 250, loop: true, callback: () => this.emitState() });
-    this.startWave(1);
+    this.beginNextWave();
   }
 
   update() {
-    if (this.isOver) return;
+    if (this.run.flow.phase === "over") return;
     const now = this.time.now;
     const { speed, fireIntervalMs } = BALANCE.player;
 
@@ -118,6 +120,11 @@ export class ArenaScene extends Phaser.Scene {
       this.nextFireAt = now + fireIntervalMs;
     }
 
+    // Edge-triggered: holding the key activates once.
+    if (this.controls.ability && !this.abilityKeyHeld) this.activateAbility(now);
+    this.abilityKeyHeld = this.controls.ability;
+    this.updateShield(now);
+
     for (const bullet of this.activeSprites(this.bullets)) {
       if (now >= (bullet.getData("expiresAt") as number)) bullet.destroy();
     }
@@ -127,20 +134,22 @@ export class ArenaScene extends Phaser.Scene {
       enemy.rotation += 0.03;
     }
 
-    if (this.waveActive && this.enemiesToSpawn === 0 && this.enemies.countActive(true) === 0) {
+    if (this.run.flow.phase === "active" && this.enemiesToSpawn === 0 && this.enemies.countActive(true) === 0) {
       this.clearWave();
     }
   }
 
-  private startWave(wave: number) {
-    const config = waveConfig(wave);
-    this.wave = wave;
+  private beginNextWave() {
+    const step = startNextWave(this.run.flow);
+    if (!step.changed) return;
+    this.run.flow = step.flow;
+
+    const config = waveConfig(step.flow.wave);
     this.enemiesToSpawn = config.enemyCount;
     this.enemyHpMultiplier = config.hpMultiplier;
     this.enemySpeed = BALANCE.rustling.speed * config.speedMultiplier;
     this.spawnBatch = config.spawnBatch;
-    this.waveActive = true;
-    this.showBanner(`WAVE ${wave}`, "#00f0ff");
+    this.showBanner(`WAVE ${step.flow.wave}`, "#00f0ff");
 
     this.spawnTimer?.remove();
     this.spawnTimer = this.time.addEvent({
@@ -177,14 +186,93 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private clearWave() {
-    this.waveActive = false;
-    this.score = registerWaveClear(this.score, this.wave);
-    this.showBanner(`WAVE ${this.wave} CLEAR  +${BALANCE.scoring.waveBonusPerWave * this.wave}`, "#fff35c");
+    const step = markWaveCleared(this.run.flow);
+    if (!step.changed) return;
+    this.run.flow = step.flow;
+    const wave = step.flow.wave;
+    this.run.score = registerWaveClear(this.run.score, wave);
+    this.showBanner(`WAVE ${wave} CLEAR  +${BALANCE.scoring.waveBonusPerWave * wave}`, "#fff35c");
     this.emitState();
-    const nextWave = this.wave + 1;
-    this.time.delayedCall(BALANCE.waves.breakMs, () => {
-      if (!this.isOver) this.startWave(nextWave);
+    this.time.delayedCall(BALANCE.waves.clearDelayMs, () => this.openPrep());
+  }
+
+  private openPrep() {
+    const step = enterPrep(this.run.flow);
+    if (!step.changed) return;
+    this.run.flow = step.flow;
+
+    this.bullets.clear(true, true);
+    this.player.setVelocity(0, 0);
+    this.emitState();
+
+    const data: PrepData = {
+      clearedWave: step.flow.wave,
+      equipped: this.run.abilities.equipped,
+      onConfirm: (id) => this.confirmPrep(id),
+    };
+    this.scene.launch(SCENES.prep, data);
+    this.scene.pause();
+  }
+
+  private confirmPrep(id: AbilityId) {
+    if (this.run.flow.phase !== "prep") return;
+    this.run.abilities = equipAbility(id);
+    this.shieldRing.setVisible(false);
+    this.shieldWasUp = false;
+    this.scene.resume();
+    this.beginNextWave();
+  }
+
+  private activateAbility(now: number) {
+    const { state, result } = tryActivate(this.run.abilities, now);
+    this.run.abilities = state;
+    const definition = ABILITIES[state.equipped];
+
+    if (result === "unavailable") {
+      this.floatText("SCANNER OFFLINE - NO AI SCAN YET", "#ff2bd6");
+    } else if (result === "cooldown") {
+      const seconds = (abilityStatus(state, now).remainingMs / 1000).toFixed(1);
+      this.floatText(`${definition.name} COOLDOWN ${seconds}s`, "#ff3b5c");
+      this.tweens.add({ targets: this.player, x: this.player.x + 4, duration: 40, yoyo: true, repeat: 2 });
+    } else if (state.equipped === "shield") {
+      this.floatText("SHIELD UP", "#7cf9ff");
+    } else if (state.equipped === "gadget") {
+      this.shockPulse();
+    }
+    this.emitState();
+  }
+
+  private updateShield(now: number) {
+    const up = blocksDamage(this.run.abilities, now);
+    if (up) {
+      this.shieldRing.setPosition(this.player.x, this.player.y).setVisible(true);
+      this.shieldRing.setScale(1 + Math.sin(now / 80) * 0.05);
+    } else if (this.shieldWasUp) {
+      this.shieldRing.setVisible(false);
+      this.floatText("SHIELD DOWN", "#7cf9ff");
+      this.emitState();
+    }
+    this.shieldWasUp = up;
+  }
+
+  private shockPulse() {
+    const { radius, damage, knockback } = BALANCE.abilities.gadget;
+    this.tweens.killTweensOf(this.pulseRing);
+    this.pulseRing.setPosition(this.player.x, this.player.y).setScale(0.1).setAlpha(1).setVisible(true);
+    this.tweens.add({
+      targets: this.pulseRing,
+      scale: 1,
+      alpha: 0,
+      duration: 260,
+      onComplete: () => this.pulseRing.setVisible(false),
     });
+    this.cameras.main.shake(120, 0.006);
+
+    for (const enemy of targetsInRadius(this.player, this.activeSprites(this.enemies), radius)) {
+      const away = new Phaser.Math.Vector2(enemy.x - this.player.x, enemy.y - this.player.y).normalize();
+      enemy.setPosition(enemy.x + away.x * knockback, enemy.y + away.y * knockback);
+      this.damageEnemy(enemy, damage);
+    }
   }
 
   private fire(now: number) {
@@ -203,8 +291,11 @@ export class ArenaScene extends Phaser.Scene {
   private onBulletHit(bullet: Sprite, enemy: Sprite) {
     if (!bullet.active || !enemy.active) return;
     bullet.destroy();
+    this.damageEnemy(enemy, BALANCE.player.bulletDamage);
+  }
 
-    const hp = (enemy.getData("hp") as number) - BALANCE.player.bulletDamage;
+  private damageEnemy(enemy: Sprite, amount: number) {
+    const hp = (enemy.getData("hp") as number) - amount;
     enemy.setData("hp", hp);
     if (hp <= 0) {
       this.killEnemy(enemy);
@@ -220,54 +311,80 @@ export class ArenaScene extends Phaser.Scene {
     this.sparks.setParticleTint(COLORS.rustling);
     this.sparks.explode(14, enemy.x, enemy.y);
     enemy.destroy();
-    this.score = registerKill(this.score, BALANCE.rustling.score, this.time.now);
+    this.run.score = registerKill(this.run.score, BALANCE.rustling.score, this.time.now);
     this.emitState();
   }
 
   private onPlayerTouched(enemy: Sprite) {
-    if (this.isOver) return;
-    const result = applyDamage(
-      this.health,
+    if (this.run.flow.phase === "over") return;
+    const now = this.time.now;
+    const result = applyContactDamage(
+      this.run.health,
       BALANCE.rustling.contactDamage,
-      this.time.now,
+      now,
       BALANCE.player.invulnerableMs,
+      blocksDamage(this.run.abilities, now),
     );
-    if (!result.applied) return;
-
-    this.health = result.health;
-    this.score = registerPlayerHit(this.score);
-    this.cameras.main.shake(140, 0.01);
-    this.tweens.add({ targets: this.player, alpha: 0.25, duration: 75, yoyo: true, repeat: 3 });
 
     const away = new Phaser.Math.Vector2(enemy.x - this.player.x, enemy.y - this.player.y).normalize();
+    if (result.blocked) {
+      enemy.setPosition(enemy.x + away.x * 60, enemy.y + away.y * 60);
+      this.sparks.setParticleTint(COLORS.shield);
+      this.sparks.explode(6, enemy.x, enemy.y);
+      return;
+    }
+    if (!result.applied) return;
+
+    this.run.health = result.health;
+    this.run.score = registerPlayerHit(this.run.score);
+    this.cameras.main.shake(140, 0.01);
+    this.tweens.add({ targets: this.player, alpha: 0.25, duration: 75, yoyo: true, repeat: 3 });
     enemy.setPosition(enemy.x + away.x * 60, enemy.y + away.y * 60);
 
     this.emitState();
-    if (this.health.hp <= 0) this.endGame();
+    if (this.run.health.hp <= 0) this.endGame();
   }
 
   private endGame() {
-    this.isOver = true;
-    this.waveActive = false;
+    const step = endRun(this.run.flow);
+    if (!step.changed) return;
+    this.run.flow = step.flow;
+    this.spawnTimer?.remove();
+    this.spawnTimer = null;
     this.physics.pause();
+    this.shieldRing.setVisible(false);
     this.player.setTint(COLORS.danger);
     this.sparks.setParticleTint(COLORS.player);
     this.sparks.explode(40, this.player.x, this.player.y);
     this.cameras.main.shake(300, 0.02);
 
-    const summary = { score: this.score.points, wave: this.wave };
+    const summary = { score: this.run.score.points, wave: this.run.flow.wave };
     this.bus.emit("game:over", summary);
+    this.emitState();
     this.time.delayedCall(1000, () => this.scene.start(SCENES.gameOver, summary));
   }
 
   private emitState() {
+    const now = this.time.now;
+    const { equipped } = this.run.abilities;
+    const { status, remainingMs } = abilityStatus(this.run.abilities, now);
     this.bus.emit("game:state", {
-      score: this.score.points,
-      wave: this.wave,
-      hp: this.health.hp,
-      maxHp: this.health.maxHp,
-      multiplier: effectiveMultiplier(this.score, this.time.now),
+      score: this.run.score.points,
+      wave: this.run.flow.wave,
+      hp: this.run.health.hp,
+      maxHp: this.run.health.maxHp,
+      multiplier: effectiveMultiplier(this.run.score, now),
+      phase: this.run.flow.phase,
+      ability: { id: equipped, name: ABILITIES[equipped].name, status, remainingMs },
     });
+  }
+
+  private floatText(message: string, color: string) {
+    const text = this.add
+      .text(this.player.x, this.player.y - 40, message, { fontFamily: FONT, fontSize: "18px", color })
+      .setOrigin(0.5)
+      .setDepth(5);
+    this.tweens.add({ targets: text, y: text.y - 30, alpha: 0, duration: 900, onComplete: () => text.destroy() });
   }
 
   private showBanner(message: string, color: string) {
@@ -303,6 +420,7 @@ export class ArenaScene extends Phaser.Scene {
     this.detachKeyboard?.();
     this.detachKeyboard = null;
     this.spawnTimer = null;
+    this.scene.stop(SCENES.prep);
     this.scene.stop(SCENES.hud);
   }
 }

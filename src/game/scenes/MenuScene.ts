@@ -19,7 +19,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 420, "MOVE  WASD / ARROWS\nFIRE  SPACE (auto-aims)", {
+      .text(cx, 420, "MOVE     WASD / ARROWS\nFIRE     SPACE (auto-aims)\nABILITY  E / SHIFT", {
         fontFamily: FONT,
         fontSize: "22px",
         color: "#e8f7ff",

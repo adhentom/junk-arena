@@ -45,7 +45,7 @@ export default function GameShell() {
       )}
       <p className="sr-only" data-testid="game-status">
         {status
-          ? `Wave ${status.wave}. Score ${status.score}. Health ${status.hp} of ${status.maxHp}.`
+          ? `${status.phase === "prep" ? "Preparation phase. " : ""}Wave ${status.wave}. Score ${status.score}. Health ${status.hp} of ${status.maxHp}. Ability ${status.ability.name}: ${status.ability.status}.`
           : "Game not started."}
       </p>
     </>
